@@ -5,15 +5,19 @@ const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const SLIME_FRAME_WIDTH = 32;
 const SLIME_FRAME_HEIGHT = 32;
-const SLIME_VELOCITY = 50;
 const SLIME_MOVE_SPEED = 100;
 const SLIME_ANIM_FRAME_RATE = 5;
+const APPLE_DETECTION_RANGE = 150;
 
 const ASSET_KEYS = {
   PASSIVE_SLIME: "passiveSlime",
   AGGRESSIVE_SLIME: "aggressiveSlime",
   APPLE: "apple",
 };
+
+interface CustomSlimeSprite extends Phaser.GameObjects.Sprite {
+    wanderTarget?: Phaser.Math.Vector2;
+}
 
 class MainScene extends Phaser.Scene {
   private slimeGroup!: Phaser.GameObjects.Group;
@@ -74,13 +78,39 @@ class MainScene extends Phaser.Scene {
       this
     );
 
+    this.physics.add.collider(this.slimeGroup, this.slimeGroup);
+
   }
 
   update() {
     this.slimeGroup.children.iterate((child: Phaser.GameObjects.GameObject) => {
-      const slimeChild = child as Phaser.GameObjects.Sprite;
+      const slimeChild = child as CustomSlimeSprite;
       if (slimeChild && slimeChild.body && this.apple) {
-        this.physics.moveToObject(slimeChild, this.apple, SLIME_MOVE_SPEED);
+        const distance = Phaser.Math.Distance.Between(
+          slimeChild.x,
+          slimeChild.y,
+          this.apple.x,
+          this.apple.y
+        );
+
+        if (distance > APPLE_DETECTION_RANGE) {
+          // Wander behavior
+          if (!slimeChild.wanderTarget || Phaser.Math.Distance.Between(
+            slimeChild.x,
+            slimeChild.y,
+            slimeChild.wanderTarget.x,
+            slimeChild.wanderTarget.y
+          ) < 10) { // If no target or reached target (within 10 pixels)
+            slimeChild.wanderTarget = new Phaser.Math.Vector2(
+              Math.random() * GAME_WIDTH,
+              Math.random() * GAME_HEIGHT
+            );
+          }
+          this.physics.moveToObject(slimeChild, slimeChild.wanderTarget, SLIME_MOVE_SPEED);
+        } else {
+          // Move towards the apple
+          this.physics.moveToObject(slimeChild, this.apple, SLIME_MOVE_SPEED);
+        }
       }
       return true;
     });
@@ -98,7 +128,7 @@ class MainScene extends Phaser.Scene {
   private createSlime(
     kind: string,
     isChild: boolean = false
-  ): Phaser.GameObjects.Sprite | undefined {
+  ): CustomSlimeSprite | undefined {
     const birthRate = Math.random();
 
     if (!isChild || (isChild && birthRate > 0.5)) {
@@ -107,10 +137,13 @@ class MainScene extends Phaser.Scene {
         Math.random() * GAME_WIDTH,
         Math.random() * GAME_HEIGHT,
         uniqueSlime
+      ) as CustomSlimeSprite;
+
+      // Initialize wander target
+      slime.wanderTarget = new Phaser.Math.Vector2(
+        Math.random() * GAME_WIDTH,
+        Math.random() * GAME_HEIGHT
       );
-      slime.setBounce(1);
-      slime.setCollideWorldBounds(true);
-      slime.setVelocity(SLIME_VELOCITY, SLIME_VELOCITY);
 
       this.anims.create({
         key: `${uniqueSlime}Animation`,
