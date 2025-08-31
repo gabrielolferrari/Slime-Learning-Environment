@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 import { ColorPalette } from "./utils/ColorPalette";
 
-// Constants
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const SLIME_FRAME_WIDTH = 32;
@@ -19,7 +18,7 @@ const ASSET_KEYS = {
 class MainScene extends Phaser.Scene {
   private slimeGroup!: Phaser.GameObjects.Group;
   private apple!: Phaser.Physics.Arcade.Image;
-  private passiveSlimeCount = 1;
+  private passiveSlimeCount = 5;
   private aggressiveSlimeCount = 1;
 
   constructor() {
@@ -43,6 +42,12 @@ class MainScene extends Phaser.Scene {
   }
 
   create() {
+
+    this.add
+      .text(GAME_WIDTH - 100, 10, "Pause", { fontSize: "20px", color: ColorPalette.getColor("black") })
+      .setInteractive()
+      .on("pointerdown", () => this.pause());
+
     this.slimeGroup = this.physics.add.group();
 
     for (let i = 0; i < this.passiveSlimeCount; i++)
@@ -61,10 +66,13 @@ class MainScene extends Phaser.Scene {
       this
     );
 
-    this.add
-      .text(GAME_WIDTH - 100, 10, "Pause", { fontSize: "20px", color: ColorPalette.getColor("wisteria") })
-      .setInteractive()
-      .on("pointerdown", () => this.pause());
+    this.physics.add.overlap(
+      this.slimeGroup,
+      this.slimeGroup,
+      this.slimeFight,
+      undefined,
+      this
+    );
 
   }
 
@@ -116,7 +124,6 @@ class MainScene extends Phaser.Scene {
 
       return slime;
     } else {
-      console.log("No slime born due to birth rate");
       return undefined
     }
   }
@@ -131,16 +138,37 @@ class MainScene extends Phaser.Scene {
     const slimeSprite = slime as Phaser.GameObjects.Sprite;
     const slimeKind = slimeSprite.texture.key;
 
-    console.log("slimeKind", slimeKind);
-
     if (slimeKind === ASSET_KEYS.PASSIVE_SLIME) {
       this.createSlime(ASSET_KEYS.PASSIVE_SLIME, true);
     } else if (slimeKind === ASSET_KEYS.AGGRESSIVE_SLIME) {
       this.createSlime(ASSET_KEYS.AGGRESSIVE_SLIME, true);
     }
-
   }
 
+  private slimeFight(slime1: any, slime2: any) {
+    const slimeSprite1 = slime1 as Phaser.GameObjects.Sprite;
+    const slimeSprite2 = slime2 as Phaser.GameObjects.Sprite;
+
+    const slimeKind1 = slimeSprite1.texture.key;
+    const slimeKind2 = slimeSprite2.texture.key;
+
+    if (
+      (slimeKind1 === ASSET_KEYS.PASSIVE_SLIME &&
+        slimeKind2 === ASSET_KEYS.AGGRESSIVE_SLIME) ||
+      (slimeKind1 === ASSET_KEYS.AGGRESSIVE_SLIME &&
+        slimeKind2 === ASSET_KEYS.PASSIVE_SLIME)
+    ) {
+        const fightRate = Math.random();
+        if(fightRate > 0.5) {
+            if (slimeKind1 === ASSET_KEYS.PASSIVE_SLIME) {
+                this.slimeGroup.remove(slimeSprite1, true, true);
+            } else {
+                this.slimeGroup.remove(slimeSprite2, true, true);
+            }
+            console.log("A slime has been defeated!");
+        }
+    }
+  }
 
   private pause() {
     this.scene.pause();

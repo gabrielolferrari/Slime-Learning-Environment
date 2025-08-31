@@ -39,6 +39,7 @@ export class ColorPalette {
         wisteria: '#C9A0DC',
         stageColor: '#41CF28',
         carrot: '#FFA500',
+        black: '#000000',
     };
 
     private static colorNames: string[] = Object.keys(ColorPalette.colors);
