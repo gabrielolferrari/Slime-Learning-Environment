@@ -37,7 +37,7 @@ export class ColorPalette {
         softGreen: '#C1E1C1',
         thistle: '#D8BFD8',
         wisteria: '#C9A0DC',
-        stageColor: '#41CF28',
+        stageColor: '#b4c011',
         carrot: '#FFA500',
         black: '#000000',
     };
