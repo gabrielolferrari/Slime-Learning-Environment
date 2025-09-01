@@ -49,6 +49,10 @@ class MainScene extends Phaser.Scene {
     this.appleGroup = this.physics.add.group();
     this.kiwiGroup = this.physics.add.group();
 
+    // Disponibiliza os grupos de frutas para toda a cena (para que os slimes possam "vê-los")
+    this.registry.set('appleGroup', this.appleGroup);
+    this.registry.set('kiwiGroup', this.kiwiGroup);
+
     for (let i = 0; i < this.passiveSlimeCount; i++) {
       this.createSlime(ASSET_KEYS.PASSIVE_SLIME);
     }
@@ -80,10 +84,8 @@ class MainScene extends Phaser.Scene {
   }
 
   update() {
-    this.slimeGroup.children.iterate(slime => {
-      (slime as Slime).update(this.appleGroup, this.kiwiGroup);
-      return true;
-    });
+    // O loop de update da cena agora é muito simples!
+    // Cada slime toma suas próprias decisões em seu próprio timer.
   }
 
   private createFruit(kind: string): Phaser.Physics.Arcade.Image {
@@ -110,6 +112,10 @@ class MainScene extends Phaser.Scene {
     const fruit = fruitObject as Phaser.Physics.Arcade.Image;
     const fruitKey = fruit.texture.key;
 
+    // Informa o slime sobre a colisão para que ele possa aprender
+    slime.handleFruitCollision(fruitKey, this.appleGroup, this.kiwiGroup);
+
+    // Lógica de jogo (criar novo slime ou não)
     if (fruitKey === ASSET_KEYS.APPLE) {
         const slimeKind = slime.getSlimeType();
         if (slimeKind === ASSET_KEYS.PASSIVE_SLIME) {
@@ -117,8 +123,6 @@ class MainScene extends Phaser.Scene {
         } else if (slimeKind === ASSET_KEYS.AGGRESSIVE_SLIME) {
             this.createSlime(ASSET_KEYS.AGGRESSIVE_SLIME, true);
         }
-    } else if (fruitKey === ASSET_KEYS.KIWI) {
-        slime.applyKiwiPenalty();
     }
 
     fruit.setPosition(

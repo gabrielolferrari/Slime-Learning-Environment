@@ -6,8 +6,8 @@ export const SLIME_MOVE_SPEED = 100;
 export const SLIME_ANIM_FRAME_RATE = 5;
 export const APPLE_DETECTION_RANGE = 150;
 
-export const APPLE_COUNT = 1;
-export const KIWI_COUNT = 4;
+export const APPLE_COUNT = 10;
+export const KIWI_COUNT = 10;
 
 export const ASSET_KEYS = {
   PASSIVE_SLIME: "passiveSlime",
