@@ -6,12 +6,15 @@ import {
   SLIME_FRAME_WIDTH,
   SLIME_FRAME_HEIGHT,
   ASSET_KEYS,
+  APPLE_COUNT,
+  KIWI_COUNT,
 } from "./constants";
 import { Slime } from "./Slime";
 
 class MainScene extends Phaser.Scene {
   private slimeGroup!: Phaser.GameObjects.Group;
-  private apple!: Phaser.Physics.Arcade.Image;
+  private appleGroup!: Phaser.GameObjects.Group;
+  private kiwiGroup!: Phaser.GameObjects.Group;
   private passiveSlimeCount = 5;
   private aggressiveSlimeCount = 1;
 
@@ -33,6 +36,7 @@ class MainScene extends Phaser.Scene {
     );
 
     this.load.image(ASSET_KEYS.APPLE, "src/sprites/apple.png");
+    this.load.image(ASSET_KEYS.KIWI, "src/sprites/kiwi.png");
   }
 
   create() {
@@ -42,6 +46,8 @@ class MainScene extends Phaser.Scene {
       .on("pointerdown", () => this.pause());
 
     this.slimeGroup = this.add.group();
+    this.appleGroup = this.physics.add.group();
+    this.kiwiGroup = this.physics.add.group();
 
     for (let i = 0; i < this.passiveSlimeCount; i++) {
       this.createSlime(ASSET_KEYS.PASSIVE_SLIME);
@@ -51,17 +57,16 @@ class MainScene extends Phaser.Scene {
       this.createSlime(ASSET_KEYS.AGGRESSIVE_SLIME);
     }
 
-    this.apple = this.createFruit(ASSET_KEYS.APPLE);
+    for (let i = 0; i < APPLE_COUNT; i++) {
+      this.appleGroup.add(this.createFruit(ASSET_KEYS.APPLE));
+    }
 
-    this.physics.add.overlap(
-      this.slimeGroup,
-      this.apple,
-      (slime, apple) => {
-        this.handleAppleCollision(slime as Slime, apple as Phaser.Physics.Arcade.Image);
-      },
-      undefined,
-      this
-    );
+    for (let i = 0; i < KIWI_COUNT; i++) {
+      this.kiwiGroup.add(this.createFruit(ASSET_KEYS.KIWI));
+    }
+
+    this.physics.add.overlap(this.slimeGroup, this.appleGroup, this.handleFruitCollision, undefined, this);
+    this.physics.add.overlap(this.slimeGroup, this.kiwiGroup, this.handleFruitCollision, undefined, this);
 
     this.physics.add.collider(
       this.slimeGroup,
@@ -76,7 +81,7 @@ class MainScene extends Phaser.Scene {
 
   update() {
     this.slimeGroup.children.iterate(slime => {
-      (slime as Slime).update(this.apple);
+      (slime as Slime).update(this.appleGroup, this.kiwiGroup);
       return true;
     });
   }
@@ -100,18 +105,26 @@ class MainScene extends Phaser.Scene {
     }
   }
 
-  private handleAppleCollision(slime: Slime, apple: Phaser.Physics.Arcade.Image) {
-    apple.setPosition(
-      Math.random() * GAME_WIDTH,
-      Math.random() * GAME_HEIGHT
-    );
+  private handleFruitCollision(slimeObject: Phaser.GameObjects.GameObject, fruitObject: Phaser.GameObjects.GameObject) {
+    const slime = slimeObject as Slime;
+    const fruit = fruitObject as Phaser.Physics.Arcade.Image;
+    const fruitKey = fruit.texture.key;
 
-    const slimeKind = slime.getSlimeType();
-    if (slimeKind === ASSET_KEYS.PASSIVE_SLIME) {
-      this.createSlime(ASSET_KEYS.PASSIVE_SLIME, true);
-    } else if (slimeKind === ASSET_KEYS.AGGRESSIVE_SLIME) {
-      this.createSlime(ASSET_KEYS.AGGRESSIVE_SLIME, true);
+    if (fruitKey === ASSET_KEYS.APPLE) {
+        const slimeKind = slime.getSlimeType();
+        if (slimeKind === ASSET_KEYS.PASSIVE_SLIME) {
+            this.createSlime(ASSET_KEYS.PASSIVE_SLIME, true);
+        } else if (slimeKind === ASSET_KEYS.AGGRESSIVE_SLIME) {
+            this.createSlime(ASSET_KEYS.AGGRESSIVE_SLIME, true);
+        }
+    } else if (fruitKey === ASSET_KEYS.KIWI) {
+        slime.applyKiwiPenalty();
     }
+
+    fruit.setPosition(
+        Math.random() * GAME_WIDTH,
+        Math.random() * GAME_HEIGHT
+    );
   }
 
   private pause() {
